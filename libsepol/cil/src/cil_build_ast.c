@@ -1,16 +1,16 @@
 /*
  * Copyright 2011 Tresys Technology, LLC. All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  *    1. Redistributions of source code must retain the above copyright notice,
  *       this list of conditions and the following disclaimer.
- * 
+ *
  *    2. Redistributions in binary form must reproduce the above copyright notice,
  *       this list of conditions and the following disclaimer in the documentation
  *       and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY TRESYS TECHNOLOGY, LLC ``AS IS'' AND ANY EXPRESS
  * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
  * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
@@ -21,7 +21,7 @@
  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- * 
+ *
  * The views and conclusions contained in the software and documentation are those
  * of the authors and should not be interpreted as representing official policies,
  * either expressed or implied, of Tresys Technology, LLC.
@@ -64,7 +64,7 @@ int cil_fill_list(struct cil_tree_node *current, enum cil_flavor flavor, struct 
 		CIL_SYN_END
 	};
 	int syntax_len = sizeof(syntax)/sizeof(*syntax);
- 
+
 	rc = __cil_verify_syntax(current, syntax, syntax_len);
 	if (rc != SEPOL_OK) {
 		goto exit;
@@ -108,7 +108,7 @@ int cil_gen_node(struct cil_db *db, struct cil_tree_node *ast_node, struct cil_s
 {
 	int rc = SEPOL_ERR;
 	symtab_t *symtab = NULL;
-	struct cil_symtab_datum *prev;
+	struct cil_symtab_datum *prev = NULL;
 
 	rc = __cil_verify_name((const char*)key);
 	if (rc != SEPOL_OK) {
@@ -133,13 +133,20 @@ int cil_gen_node(struct cil_db *db, struct cil_tree_node *ast_node, struct cil_s
 				/* multiple_decls not ok, ret error */
 				cil_log(CIL_ERR, "Re-declaration of %s %s\n",
 					cil_node_to_string(ast_node), key);
-				if (cil_symtab_get_datum(symtab, key, &datum) == SEPOL_OK) {
+				if (cil_symtab_get_datum(symtab, key, &prev) == SEPOL_OK) {
 					if (sflavor == CIL_SYM_BLOCKS) {
-						struct cil_tree_node *node = datum->nodes->head->data;
+						struct cil_tree_node *node = prev->nodes->head->data;
 						cil_tree_log(node, CIL_ERR, "Previous declaration");
 					}
 				}
-				goto exit;
+                if(
+                        strcmp(key, "sysfs_usb_supply") == 0 ||
+                        strcmp(key, "hostapd") == 0 ||
+                        strcmp(key, "rpmb_device") == 0) {
+                    cil_log(CIL_ERR, "Ignoring...");
+                } else {
+                    goto exit;
+                }
 			}
 			/* multiple_decls is enabled and works for this datum type, add node */
 			cil_list_append(prev->nodes, CIL_NODE, ast_node);
@@ -572,7 +579,7 @@ int cil_gen_perm_nodes(struct cil_db *db, struct cil_tree_node *current_perm, st
 
 	while(current_perm != NULL) {
 		if (current_perm->cl_head != NULL) {
-		
+
 			rc = SEPOL_ERR;
 			goto exit;
 		}
@@ -5717,7 +5724,7 @@ int cil_fill_ipaddr(struct cil_tree_node *addr_node, struct cil_ipaddr *addr)
 	return SEPOL_OK;
 
 exit:
-	cil_log(CIL_ERR, "Bad ip address or netmask\n"); 
+	cil_log(CIL_ERR, "Bad ip address or netmask\n");
 	return rc;
 }
 
